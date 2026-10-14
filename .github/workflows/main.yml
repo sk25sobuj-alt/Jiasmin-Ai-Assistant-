@@ -27,13 +27,20 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Build debug APK
-        run: gradle assembleDebug
+        run: |
+          PROJ_DIR=$(dirname "$(find "$GITHUB_WORKSPACE" -maxdepth 2 -name 'settings.gradle' | head -n 1)")
+          echo "Project dir: $PROJ_DIR"
+          gradle -p "$PROJ_DIR" assembleDebug
+          echo "PROJ_DIR=$PROJ_DIR" >> "$GITHUB_ENV"
 
       - name: Rename APK
-        run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Jiasmin-Ai-Assistant.apk
+        run: |
+          APK=$(find "$PROJ_DIR" -path '*outputs/apk/debug/app-debug.apk' | head -n 1)
+          mv "$APK" "$(dirname "$APK")/Jiasmin-Ai-Assistant.apk"
+          echo "APK_PATH=$(dirname "$APK")/Jiasmin-Ai-Assistant.apk" >> "$GITHUB_ENV"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: Jiasmin-Ai-Assistant-apk
-          path: app/build/outputs/apk/debug/Jiasmin-Ai-Assistant.apk
+          path: ${{ env.APK_PATH }}
