@@ -1,0 +1,46 @@
+name: Build Debug APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # NOTE: ubuntu-latest runner-e Android SDK age thekei install kora thake
+      # (ANDROID_HOME set kora), tai alada "Set up Android SDK" step dorkar nai.
+      # Oi step ta license prompt-e atke giye fail korchilo.
+
+      - name: Set up Gradle (no wrapper needed)
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK
+        run: |
+          PROJ_DIR=$(dirname "$(find "$GITHUB_WORKSPACE" -maxdepth 2 -name 'settings.gradle' | head -n 1)")
+          echo "Project dir: $PROJ_DIR"
+          gradle -p "$PROJ_DIR" assembleDebug
+          echo "PROJ_DIR=$PROJ_DIR" >> "$GITHUB_ENV"
+
+      - name: Rename APK
+        run: |
+          APK=$(find "$PROJ_DIR" -path '*outputs/apk/debug/app-debug.apk' | head -n 1)
+          mv "$APK" "$(dirname "$APK")/Jiasmin-Ai-Assistant.apk"
+          echo "APK_PATH=$(dirname "$APK")/Jiasmin-Ai-Assistant.apk" >> "$GITHUB_ENV"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jiasmin-Ai-Assistant-apk
+          path: ${{ env.APK_PATH }}
